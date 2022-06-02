@@ -146,22 +146,3 @@ class Net1(nn.Module):
         y = self.convtf(y)
         
         return y
-
-# I use resnet as feature extractor
-class encoder(nn.Module):
-    def __init__(self):
-        super().__init__()
-        pretrained = resnet.resnet18(pretrained=True)
-
-        self.conv2 = pretrained._modules['layer1']
-        self.conv3 = pretrained._modules['layer2']
-        self.conv4 = pretrained._modules['layer3']
-        self.conv5 = pretrained._modules['layer4']
-    
-
-    def forward(self,x):
-        x = self.conv2(x)
-        x = self.conv3(x)
-        x = self.conv4(x)
-        x = self.conv5(x)
-        return x
