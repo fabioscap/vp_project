@@ -73,7 +73,7 @@ def sample_depth_random(depth_full: torch.Tensor, p) -> torch.Tensor:
 
 mse = torch.nn.MSELoss()
 
-rmse = lambda predicted,true: torch.square(mse(predicted,true))
+rmse = lambda predicted,true: torch.sqrt(mse(predicted,true))
 lrmse = lambda predicted,true: torch.log10(rmse(predicted,true))
 
 def d_accuracy(predicted,true,threshold=1.25,pow=1):
