@@ -1,31 +1,35 @@
+from turtle import down
 from numpy import outer
 import torch
 
 import torch.nn as nn
 
 from torchvision.models import resnet
+from torchvision.models.resnet import BasicBlock
 
 # returns a convolution block with batch norm
-def convolution_block(in_channels, out_channels, ksize, stride, padding):
+def convolution_block(in_channels, out_channels, ksize, stride, padding = 1,bias=True):
     return nn.Sequential(
         nn.Conv2d(in_channels = in_channels,
                   out_channels = out_channels,
                   kernel_size = ksize,
                   stride = stride,
                   padding = padding,
+                  bias = bias
         ),
         nn.BatchNorm2d(out_channels)
     )
 
 # returns a transposed convolution block with batch norm
-def upconvolution_block(in_channels, out_channels, ksize, stride, padding,out_padding):
+def upconvolution_block(in_channels, out_channels, ksize, stride, padding = 1,out_padding = 0,bias=True):
     return nn.Sequential(
         nn.ConvTranspose2d(in_channels = in_channels,
                            out_channels = out_channels,
                            kernel_size = ksize,
                            stride = stride,
                            padding = padding,
-                           output_padding= out_padding
+                           output_padding= out_padding,
+                           bias = bias
         ),
         nn.BatchNorm2d(out_channels)
     )
@@ -146,3 +150,119 @@ class Net1(nn.Module):
         y = self.convtf(y)
         
         return y
+
+# the same architecture as Net1 but with half the channels
+class Net2(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.rgb_conv1 = convolution_block(in_channels=3,
+                                   out_channels=24,
+                                   ksize=3,
+                                   stride=1,
+                                   padding=1)
+
+        self.d_conv1 = convolution_block(in_channels=1,
+                                        out_channels=8,
+                                        ksize=3,
+                                        stride=1,
+                                        padding=1)
+
+        self.conv2 = nn.Sequential(
+            BasicBlock(32,32),
+            BasicBlock(32,32)
+        )
+
+        self.conv3 = nn.Sequential(
+            BasicBlock(32,64,2,downsample=convolution_block(32,64,1,2,0,bias=False)),
+            BasicBlock(64,64)
+        )
+
+        self.conv4 = nn.Sequential(
+            BasicBlock(64,128,2,downsample=convolution_block(64,128,1,2,0,bias=False)),
+            BasicBlock(128,128)
+        )
+
+        self.conv5 = nn.Sequential(
+            BasicBlock(128,256,2,downsample=convolution_block(128,256,1,2,0,bias=False)),
+            BasicBlock(256,256)
+        )
+
+        self.conv6 = convolution_block(in_channels = 256,
+                                        out_channels = 256,
+                                        ksize = 3,
+                                        stride = 2,
+                                        padding = 1)
+        self.convt5 = upconvolution_block(in_channels = 256,
+                                          out_channels = 128,
+                                          ksize = 3,
+                                          stride = 2,
+                                          padding = 1,
+                                          out_padding = 1)
+        self.convt4 = upconvolution_block(in_channels = 384,
+                                          out_channels = 64,
+                                          ksize = 3,
+                                          stride = 2,
+                                          padding = 1,
+                                          out_padding = 1)
+        self.convt3 = upconvolution_block(in_channels = 192,
+                                          out_channels = 32,
+                                          ksize = 3,
+                                          stride = 2,
+                                          padding = 1,
+                                          out_padding = 1)
+        self.convt2 = upconvolution_block(in_channels = 96,
+                                          out_channels = 32,
+                                          ksize = 3,
+                                          stride = 2,
+                                          out_padding = 1)
+        self.convt1 = upconvolution_block(in_channels = 64,
+                                          out_channels = 32,
+                                          ksize = 3,
+                                          stride = 1,
+                                          out_padding = 0)
+
+        self.convtf = convolution_block(in_channels = 64,
+                                        out_channels = 1,
+                                        ksize = 1,
+                                        stride = 1,
+                                        padding = 0)
+
+        self.relu = nn.ReLU()
+
+
+    def forward(self,rgb,depth):
+        a = self.relu(self.rgb_conv1(rgb))
+        b = self.relu(self.d_conv1(depth))
+        
+        x = torch.cat((a,b),1)
+
+        # encoder
+        conv2 = self.conv2(x)
+        print("conv2.shape: {}".format(conv2.shape))
+        conv3 = self.conv3(conv2)
+        conv4 = self.conv4(conv3)
+        conv5 = self.conv5(conv4)
+        conv6 = self.relu(self.conv6(conv5))
+
+        # decoder
+        convt5 = self.relu(self.convt5(conv6))
+        y = torch.cat((convt5, conv5), 1)
+
+        convt4 = self.relu(self.convt4(y))
+        y = torch.cat((convt4, conv4), 1)
+
+        convt3 = self.relu(self.convt3(y))
+        y = torch.cat((convt3, conv3), 1)
+
+        convt2 = self.relu(self.convt2(y))
+        print("convt2.shape: {}".format(convt2.shape))
+        y = torch.cat((convt2, conv2), 1)
+
+        convt1 = self.relu(self.convt1(y))
+        y = torch.cat((convt1, x), 1)
+
+        y = self.convtf(y)
+        
+        return y
+
+
