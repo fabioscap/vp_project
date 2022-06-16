@@ -124,7 +124,7 @@ def train(model,n_epochs,loss_fn,optimizer,loader,
             if log and (i % 500 == 0): # log loss every 500 batches
                 print("{}: loss: {}".format(i,loss))
         # save once every epoch
-        if save_name is not None:
+        if save_name is not None and (j % 15 == 0):
             torch.save(model.state_dict(),
                 "weights/{}_{}.pth"\
                 .format(save_name,j+1))
