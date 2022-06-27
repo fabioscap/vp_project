@@ -78,11 +78,7 @@ lrmse = lambda predicted,true: torch.log10(rmse(predicted,true))
 
 
 from torch.nn.functional import conv2d
-bl = torch.tensor([1.,2,1])
-dif = torch.tensor([1.,0,-1])
-Sx = torch.einsum("i,j->ij",bl,dif).reshape((1,1,3,3))
-Sy = torch.einsum("i,j->ji",bl,dif).reshape((1,1,3,3))
-def edge_loss(predicted,true):
+def edge_loss(predicted,true,Sx,Sy):
 
     err = predicted-true
 
