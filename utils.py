@@ -76,6 +76,21 @@ mse = torch.nn.MSELoss()
 rmse = lambda predicted,true: torch.sqrt(mse(predicted,true))
 lrmse = lambda predicted,true: torch.log10(rmse(predicted,true))
 
+
+from torch.nn.functional import conv2d
+bl = torch.tensor([1.,2,1])
+dif = torch.tensor([1.,0,-1])
+Sx = torch.einsum("i,j->ij",bl,dif).reshape((1,1,3,3))
+Sy = torch.einsum("i,j->ji",bl,dif).reshape((1,1,3,3))
+def edge_loss(predicted,true):
+
+    err = predicted-true
+
+    grad_y = conv2d(err,Sy,padding="same")
+    grad_x = conv2d(err,Sx,padding="same")
+
+    return torch.sum(torch.square(grad_x+grad_y)) / torch.numel(grad_x)
+
 def d_accuracy(predicted,true,threshold=1.25,pow=1):
 
     # there are some negative values in the prediction (very close to 0)
@@ -101,7 +116,6 @@ def train(model,n_epochs,loss_fn,optimizer,loader,
     # set model to train mode 
     # mainly affects batchnorm
     model.train()
-
 
     i = 0
     for j in range(n_epochs):
