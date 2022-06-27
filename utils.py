@@ -86,11 +86,11 @@ def d_accuracy(predicted,true,threshold=1.25,pow=1):
     ratio = predicted / true
     max_ratio =  torch.where(ratio < 1,torch.pow(ratio,-1),ratio) # flip when ratio < 1
 
-    return torch.sum(max_ratio[max_ratio<threshold**pow]) / P
+    return torch.sum(max_ratio<threshold**pow) / P # count the elements that satisfy the predicate
 
 
 def count_params(model):
-    sum(p.numel() for p in model.parameters() if p.requires_grad)
+    sum(p.numel() for p in model.parameters())
 
 
 def train(model,n_epochs,loss_fn,optimizer,loader,
