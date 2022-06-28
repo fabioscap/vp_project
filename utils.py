@@ -138,3 +138,17 @@ def train(model,n_epochs,loss_fn,optimizer,loader,
             torch.save(model.state_dict(),
                 "weights/{}_{}.pth"\
                 .format(save_name,j+1))
+
+def compute_accuracy(model,acc_fn,loader,device):
+    acc = 0
+    n = 0
+    model.eval()
+    for batch in loader:
+        rgb = batch["tgb"].to(device)
+        depth = batch["depth"].to(device)
+        depth_t = batch["depth_t"].to(device)
+        n += 1
+        # running average
+        acc = ((n-1)*acc+acc_fn(model(rgb,depth_t),depth)) / n
+    
+    return acc
