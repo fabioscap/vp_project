@@ -144,7 +144,7 @@ def compute_accuracy(model,acc_fn,loader,device):
     n = 0
     model.eval()
     for batch in loader:
-        rgb = batch["tgb"].to(device)
+        rgb = batch["rgb"].to(device)
         depth = batch["depth"].to(device)
         depth_t = batch["depth_t"].to(device)
         n += 1

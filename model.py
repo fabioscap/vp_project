@@ -153,7 +153,7 @@ class Net1(nn.Module):
 
 # the same architecture as Net1 but with half the channels
 class Net2(nn.Module):
-    def __init__(self,shape=(32,64,128,256)):
+    def __init__(self,shape=(32,64,128,256)): # original has shape (64,128,256,512)
         super().__init__()
         self.rgb_conv1 = convolution_block(in_channels=3,
                                    out_channels=shape[0]*3//4,
@@ -263,7 +263,7 @@ class Net2(nn.Module):
         
         return y
 
-# replace resBlocks with standard convolution blocks
+# replace learnable downsampling with max pooling
 class Net3(nn.Module):
     def __init__(self,shape=(32,64,128,256)):
         super().__init__()
@@ -279,14 +279,25 @@ class Net3(nn.Module):
                                         stride=1,
                                         padding=1)
 
-        self.conv2 = convolution_block(in_channels=shape[0],
-                                       out_channels=shape[0])
+        self.conv2 = nn.Sequential(
+            BasicBlock(shape[0],shape[0]),
+            convolution_block(shape[0],shape[0])
+        )
 
-        self.conv3 = convolution_block(in_channels=shape[0],out_channels=shape[1],stride=2)
+        self.conv3 = nn.Sequential(
+            BasicBlock(shape[0],shape[0],2,downsample=nn.MaxPool2d(2,2)),
+            convolution_block(shape[0],shape[1])
+        )
 
-        self.conv4 = convolution_block(in_channels=shape[1],out_channels=shape[2],stride=2)
+        self.conv4 = nn.Sequential(
+            BasicBlock(shape[1],shape[1],2,downsample=nn.MaxPool2d(2,2)),
+            convolution_block(shape[1],shape[2])
+        )
 
-        self.conv5 = convolution_block(in_channels=shape[2],out_channels=shape[3],stride=2)
+        self.conv5 = nn.Sequential(
+            BasicBlock(shape[2],shape[2],2,downsample=nn.MaxPool2d(2,2)),
+            convolution_block(shape[2],shape[3])
+        )
 
         self.conv6 = convolution_block(in_channels = shape[3],
                                         out_channels = shape[3],
@@ -339,6 +350,7 @@ class Net3(nn.Module):
 
         # encoder
         conv2 = self.conv2(x)
+        print(conv2.shape)
         conv3 = self.conv3(conv2)
         conv4 = self.conv4(conv3)
         conv5 = self.conv5(conv4)
