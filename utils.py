@@ -8,13 +8,14 @@ from torchvision import transforms
 import os
 
 class NYUDepthV2(Dataset):
-    def __init__(self, root, shape=None,rgb_transform=None,depth_transform=None):
+    def __init__(self, root, shape=None,common_transform=None,rgb_transform=None,depth_transform=None):
         self.root = root
         self.rgb = os.path.join(self.root,"RGB")
         self.depth = os.path.join(self.root,"Depth")
         self.rgb_transform = rgb_transform
         self.depth_transform = depth_transform
-
+        self.common_transform = common_transform
+        self.shape=shape
         if shape is not None: self.resize = transforms.Resize(shape)
         else: self.resize = None
 
@@ -36,6 +37,11 @@ class NYUDepthV2(Dataset):
         if self.resize:
             rgb_tensor = self.resize(rgb_tensor)
             depth_tensor = self.resize(depth_tensor)
+
+        if self.common_transform: # data augmentation
+            rgbd_tensor = self.common_transform(torch.cat([rgb_tensor,depth_tensor],dim=0))
+            rgb_tensor = rgbd_tensor[0:3,...]
+            depth_tensor = rgbd_tensor[3,...].view(1,self.shape[0],self.shape[1])
 
         sample["rgb"] = rgb_tensor
         sample["depth"] = depth_tensor
@@ -82,10 +88,9 @@ def edge_loss(predicted,true,Sx,Sy):
 
     err = predicted-true
 
-    grad_y = conv2d(err,Sy,padding="same")
-    grad_x = conv2d(err,Sx,padding="same")
+    d = conv2d(err,Sx+Sy,padding="same")
 
-    return torch.sum(torch.square(grad_x+grad_y)) / torch.numel(grad_x)
+    return torch.sum(torch.square(d)) / torch.numel(d)
 
 def d_accuracy(predicted,true,threshold=1.25,pow=1):
 

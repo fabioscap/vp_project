@@ -350,7 +350,6 @@ class Net3(nn.Module):
 
         # encoder
         conv2 = self.conv2(x)
-        print(conv2.shape)
         conv3 = self.conv3(conv2)
         conv4 = self.conv4(conv3)
         conv5 = self.conv5(conv4)
