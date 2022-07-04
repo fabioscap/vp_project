@@ -87,10 +87,13 @@ from torch.nn.functional import conv2d
 def edge_loss(predicted,true,Sx,Sy):
 
     err = predicted-true
+    
+    dX = torch.conv2d(err,Sx,padding="same")
+    dY = torch.conv2d(err,Sy,padding="same")
 
-    d = conv2d(err,Sx+Sy,padding="same")
+    grad = torch.square(dX) + torch.square(dY)
 
-    return torch.sum(torch.square(d)) / torch.numel(d)
+    return torch.sum(grad) / torch.numel(err)
 
 def d_accuracy(predicted,true,threshold=1.25,pow=1):
 
